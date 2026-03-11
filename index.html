@@ -145,6 +145,15 @@
             </div>
         </div>
 
+        <!-- Question 4: Willingness to consume/abstain from caffeine -->
+        <div class="question" id="question4">
+            <h1>Would you be willing to consume and/or abstain from consuming caffeine?</h1>
+            <div class="options">
+                <button class="option-btn" onclick="submitWillingness('Yes')">Yes</button>
+                <button class="option-btn" onclick="submitWillingness('No')">No</button>
+            </div>
+        </div>
+
         <!-- Result: Eligible -->
         <div class="result" id="eligible">
             <h1 class="eligible">You are ELIGIBLE for this study.</h1>
@@ -170,6 +179,7 @@
         const ENTRY_NAME = 'entry.123456789';      // Replace with your name field entry ID
         const ENTRY_UID = 'entry.987654321';       // Replace with your UID field entry ID
         const ENTRY_BEVERAGES = 'entry.555555555'; // Replace with your beverages field entry ID
+        const ENTRY_WILLINGNESS = 'entry.444444444'; // Replace with your willingness field entry ID
         
         // ============================================
         
@@ -177,8 +187,12 @@
         let surveyData = {
             name: '',
             uid: '',
-            beverages: ''
+            beverages: '',
+            willingness: ''
         };
+
+        // Track if beverages question makes them potentially eligible
+        let beveragesEligible = false;
 
         // Submit name
         function submitName() {
@@ -216,19 +230,34 @@
             document.getElementById('question3').classList.add('active');
         }
 
-        // Submit beverages and determine eligibility
+        // Submit beverages and move to willingness question
         function submitBeverages(answer) {
             surveyData.beverages = answer;
+            console.log('Survey Data:', surveyData);
+            
+            // Check if beverages answer makes them potentially eligible (0 or 3+)
+            beveragesEligible = (answer === '0' || answer === '3+');
+            
+            // Hide question 3 and move to question 4
+            document.getElementById('question3').classList.remove('active');
+            document.getElementById('question4').classList.add('active');
+        }
+
+        // Submit willingness and determine final eligibility
+        function submitWillingness(answer) {
+            surveyData.willingness = answer;
             console.log('Survey Data:', surveyData);
             
             // Submit to Google Forms
             submitToGoogleForms();
             
-            // Hide question 3
-            document.getElementById('question3').classList.remove('active');
+            // Hide question 4
+            document.getElementById('question4').classList.remove('active');
             
-            // Determine eligibility: 0 or 3+ = eligible, 1 or 2 = not eligible
-            if (answer === '0' || answer === '3+') {
+            // Determine final eligibility:
+            // Eligible if: beverages (0 or 3+) AND willingness (Yes)
+            // Not eligible if: beverages (1 or 2) OR willingness (No)
+            if (beveragesEligible && answer === 'Yes') {
                 document.getElementById('eligible').classList.add('active');
             } else {
                 document.getElementById('notEligible').classList.add('active');
@@ -242,6 +271,7 @@
             formData.append(ENTRY_NAME, surveyData.name);
             formData.append(ENTRY_UID, surveyData.uid);
             formData.append(ENTRY_BEVERAGES, surveyData.beverages);
+            formData.append(ENTRY_WILLINGNESS, surveyData.willingness);
             
             // Submit to Google Forms (no-cors mode means we won't get a response, but data will be submitted)
             fetch(GOOGLE_FORM_URL, {
